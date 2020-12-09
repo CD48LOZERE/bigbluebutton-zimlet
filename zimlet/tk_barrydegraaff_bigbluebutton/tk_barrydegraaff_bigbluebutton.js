@@ -326,7 +326,7 @@ BigBlueButton.prototype._JumpToBigBlueButtonListener = function() {
                   url[i++] = port;
                }               
                
-               window.open(url.join("")+'/service/extension/bigbluebutton?meetingId='+meetingId);
+               window.open('https://bbb.lozere.fr/zimbra/bigbluebutton?meetingId='+meetingId);
                zimletInstance._cancelBtn();
             }  
             else
@@ -403,7 +403,7 @@ BigBlueButton.prototype._AddBigBlueButtonLinkInserter = function() {
                   newContent.push(currentContent.substr(0, currentContent.lastIndexOf("</body></html>")));
                   newContent.push(message
                      .replace(/\r\n/g,'<br>')
-                     .replace('[meetinglink]','<a href="'+url.join("")+'/service/extension/bigbluebutton?meetingId='+meetingId+'" target="_blank">'+url.join("")+'/service/extension/bigbluebutton?meetingId='+meetingId+ '</a>')
+                     .replace('[meetinglink]','<a href="'+'https://bbb.lozere.fr/zimbra/bigbluebutton?meetingId='+meetingId+'" target="_blank">'+'https://bbb.lozere.fr/zimbra/bigbluebutton?meetingId='+meetingId+ '</a>')
                      .replace('[password]',document.getElementById('bigbluebutton_attendee_password').value)
                   );
                   
@@ -411,7 +411,7 @@ BigBlueButton.prototype._AddBigBlueButtonLinkInserter = function() {
                }
                else {
                   newContent.push(currentContent + '\r\n\r\n' +message
-                     .replace('[meetinglink]',url.join("")+'/service/extension/bigbluebutton?meetingId='+meetingId)
+                     .replace('[meetinglink]','https://bbb.lozere.fr/zimbra/bigbluebutton?meetingId='+meetingId)
                      .replace('[password]',document.getElementById('bigbluebutton_attendee_password').value)
                   );
                }
