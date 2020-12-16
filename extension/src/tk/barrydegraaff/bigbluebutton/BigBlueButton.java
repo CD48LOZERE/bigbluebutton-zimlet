@@ -75,6 +75,7 @@ public class BigBlueButton extends ExtensionHttpHandler {
     private String BBBSecret;
     private String BBBServerUrl;
     private String DbConnectionString;
+	private String ConnectPageTitle;
 
     /**
      * Processes HTTP POST requests.
@@ -138,11 +139,13 @@ public class BigBlueButton extends ExtensionHttpHandler {
             this.BBBSecret = prop.getProperty("BBBSecret");
             this.BBBServerUrl = prop.getProperty("BBBServerUrl");
             this.DbConnectionString = prop.getProperty("db_connect_string");
+			this.ConnectPageTitle = prop.getProperty("ConnectPageTitle");
             input.close();
         } catch (Exception ex) {
             ex.printStackTrace();
             return;
         }
+		
 
         //Process get request with parameters
         final Map<String, String> paramsMap = new HashMap<String, String>();
@@ -184,8 +187,7 @@ public class BigBlueButton extends ExtensionHttpHandler {
                             //Should always run just once, as meetingId is PK in SQL.
                             while (meeting.next()) {
                                 meetingFound = true;
-                                bbbRequest("create", "meetingID=" + meeting.getString("meetingId") + "&attendeePW=" + meeting.getString("attendeePW") + "&moderatorPW=" + meeting.getString("moderatorPW"));
-
+                                bbbRequest("create", "meetingID=" + meeting.getString("meetingId") + "&attendeePW=" + meeting.getString("attendeePW") + "&moderatorPW=" + meeting.getString("moderatorPW")+ "&voiceBridge=" + meeting.getString("voiceBridge"));
                                 try {
                                     //req.getParameter throws nullpointer when not specified, then the else block would not get called. To-do rewrite
                                     if (
@@ -225,22 +227,26 @@ public class BigBlueButton extends ExtensionHttpHandler {
                         //This is an authenticated Zimbra user, allow creation of meeting
                         if (zimbraCurrentUserAccount != null) {
                             final String newMeetingId = java.util.UUID.randomUUID().toString();
+							int voiceBridgeInt = (int)((Math.random() * 90000)+10000);
+							final String voiceBridge = String.valueOf(voiceBridgeInt);
+		
                             String db_connect_string = this.DbConnectionString;
                             Connection connection = DriverManager.getConnection(db_connect_string);
 
                             if (!connection.isClosed()) {
-                                PreparedStatement stmt = connection.prepareStatement("INSERT INTO meetings VALUES (?,?,?,?,NOW())");
+                                PreparedStatement stmt = connection.prepareStatement("INSERT INTO meetings VALUES (?,?,?,?,?,NOW())");
                                 //Perhaps we should wrap uriDecode() around the parameters to decode them? Seems Java already did at this point
                                 stmt.setString(1, zimbraCurrentUserAccount.getName());
                                 stmt.setString(2, newMeetingId);
                                 stmt.setString(3, req.getParameter("attendeePassword"));
                                 stmt.setString(4, req.getParameter("moderatorPassword"));
+								stmt.setString(5, voiceBridge);
                                 stmt.executeQuery();
 
                                 sendConfirmation(zimbraCurrentUserAccount, newMeetingId, req.getParameter("attendeePassword"), req.getParameter("moderatorPassword"));
                             }
                             connection.close();
-                            responseWriter(resp, newMeetingId);
+                            responseWriter(resp, newMeetingId+";"+voiceBridge);
                         } else {
                             responseWriter(resp, "Error getting new meeting (1).");
                         }
@@ -311,9 +317,9 @@ public class BigBlueButton extends ExtensionHttpHandler {
 
             resp.setHeader("Content-Type", "text/html");
             String message = "<form method=\"GET\" action=\"/service/extension/bigbluebutton\"><table>\n" +
-                    "<tr><td>Meeting ID:</td><td><input name=\"meetingId\" placeholder=\"Meeting ID\" value=\"" + meetingID + "\"></td></tr>\n" +
-                    "<tr><td>Your name:</td><td><input name=\"name\" placeholder=\"Your name\"></td></tr>\n" +
-                    "<tr><td>Password:</td><td><input name=\"password\" placeholder=\"Password\"><input type=\"hidden\" name=\"action\" placeholder=\"action\" value=\"join\"></td></tr>\n" +
+                    "<tr><td></td><td><input name=\"meetingId\" placeholder=\"Meeting ID\" value=\"" + meetingID + "\"></td></tr>\n" +
+                    "<tr><td></td><td><input name=\"name\" placeholder=\"Nom\"></td></tr>\n" +
+                    "<tr><td></td><td><input name=\"password\" placeholder=\"Mot de passe\"><input type=\"hidden\" name=\"action\" placeholder=\"action\" value=\"join\"></td></tr>\n" +
                     "<tr><td></td><td><input type=\"Submit\"></td></tr>\n" +
                     "</table></form>";
 
@@ -321,11 +327,11 @@ public class BigBlueButton extends ExtensionHttpHandler {
 
             byte[] encoded = Files.readAllBytes(Paths.get("/opt/zimbra/lib/ext/bigbluebutton/page.css"));
             resp.getOutputStream().print(new String(encoded, StandardCharsets.UTF_8));
-            resp.getOutputStream().print("</style><title>Zimbra BigBlueButton Meeting</title>");
+            resp.getOutputStream().print("</style><title>"+ConnectPageTitle+"</title>");
             if (!"".equals(message)) {
                 message = message.concat("<br><br>");
             }
-            resp.getOutputStream().print("</head><body><div class=\"main\"><div class=\"logo\"></div><h1>Join Meeting</h1><p>" + message + "</p>");
+            resp.getOutputStream().print("</head><body><div class=\"main\"><div class=\"logo\"></div><h1>Rejoindre</h1><p>" + message + "</p>");
         } catch (
                 Exception ex) {
             ex.printStackTrace();
